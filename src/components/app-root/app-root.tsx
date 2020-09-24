@@ -44,7 +44,11 @@ export class AppRoot {
             label="Favorite Books"
             optionType="book"
             options={this.data}
-            onSelection={() => alert('Favorite books updated')}
+            onSelection={() => {
+              setTimeout(() => {
+                alert('Favorite books updated');
+              }, 0);
+            }}
           ></todo-list>
           <multiselect-simple
             label="Order Books"
