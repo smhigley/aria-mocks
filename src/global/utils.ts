@@ -128,22 +128,6 @@ export function getIndexByLetter(options: string[], filter: string, startIndex =
   }
 }
 
-export function getSearchString(char: string) {
-  // reset typing timeout and start new timeout
-  // this allows us to make multiple-letter matches, like a native select
-  if (typeof this.searchTimeout === 'number') {
-    window.clearTimeout(this.searchTimeout);
-  }
-
-  this.searchTimeout = window.setTimeout(() => {
-    this.searchString = '';
-  }, 500);
-  
-  // add most recent letter to saved search string
-  this.searchString += char;
-  return this.searchString;
-}
-
 // get updated option index
 export function getUpdatedIndex(current: number, max: number, action: MenuActions): number {
   switch(action) {

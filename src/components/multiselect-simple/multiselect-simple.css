@@ -3,15 +3,14 @@
 *  Licensed under the MIT license. See License.txt in the project root for license information.
 *--------------------------------------------------------------------------------------------*/
 
-.combo {
+.multiselect {
   display: block;
   max-width: 400px;
   position: relative;
   font-size: 0.875em;
-  margin-bottom: 2em;
 }
 
-.combo::after {
+.multiselect::after {
   border-bottom: 2px solid rgba(0,0,0,.5);
   border-right: 2px solid rgba(0,0,0,.5);
   content: '';
@@ -87,12 +86,15 @@ select.combo-input {
   padding: 0.58em 0.66em 0.66em;
 }
 
-.combo .combo-option:hover,
-.combo .combo-option.option-current {
+.multiselect .combo-option:hover {
   background-color: rgba(0,0,0,0.1);
 }
 
-.combo-option.option-current.option-selected {
+.multiselect .option-checked {
+  background-color: #c9e7ff;
+}
+
+.multiselect .combo-option.option-current {
   background-color: #0067b8;
   color: #fff;
 }
@@ -121,10 +123,4 @@ select.combo-input {
   left: 50%;
   transform: translate(-50%, -60%) rotate(45deg);
   width: 0.5em;
-}
-
-.option-selected,
-.option-selected:hover {
-  background-color: #0067b8;
-  color: #fff;
 }

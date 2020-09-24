@@ -9,15 +9,14 @@ import { getActionFromKey, getIndexByLetter, getUpdatedIndex, isScrollable, main
 interface OptionState {
   name: string;
   checked: boolean;
-  selected: boolean;
 }
 
 @Component({
-  tag: 'todo-list',
-  styleUrl: './todo-list.css',
+  tag: 'multiselect-simple',
+  styleUrl: './multiselect-simple.css',
   shadow: false
 })
-export class TodoList {
+export class MultiselectSimple {
   /**
    * Array of name/value options
    */
@@ -76,6 +75,9 @@ export class TodoList {
   // save reference to listbox
   private listboxRef: HTMLElement;
 
+  // need this so we know whether a range action should check or uncheck
+  private rangeCheckState = true;
+
   // save reference to active option
   private activeOptionRef: HTMLElement;
 
@@ -94,8 +96,7 @@ export class TodoList {
       else {
         return ({
           name: option,
-          checked: false,
-          selected: false
+          checked: false
         });
       }
     });
@@ -137,7 +138,7 @@ export class TodoList {
     return ([
       <label id={htmlId} class="combo-label">{label}</label>,
       <div
-        class={{ combo: true, open }}
+        class={{ multiselect: true, open }}
         onKeyUp={(event) => {
           if(event.key === 'Shift') {
             this.rangeStartIndex = undefined;
@@ -169,19 +170,17 @@ export class TodoList {
               <div
                 class={{
                   'option-current': this.activeIndex === i,
-                  'option-selected': !!optionStates[i].selected,
                   'option-checked': !!optionStates[i].checked,
                   'combo-option': true
                 }}
                 id={`${this.htmlId}-${i}`}
-                aria-checked={`${!!optionStates[i].checked}`}
-                aria-selected={`${!!optionStates[i].selected}`}
+                aria-selected={`${!!optionStates[i].checked}`}
                 ref={(el) => {if (this.activeIndex === i) this.activeOptionRef = el; }}
                 role="option"
                 onClick={(event) => { this.onOptionClick(event, i); }}
                 onMouseDown={this.onOptionMouseDown.bind(this)}
               >
-                <div class="option-checkbox" onClick={() => { this.onCheckboxClick(i); }}></div>
+                <div class="option-checkbox"></div>
                 <div class="option-name">{option}</div>
               </div>
             );
@@ -207,14 +206,6 @@ export class TodoList {
     return this.searchString;
   }
 
-  private onCheckboxClick(index: number) {
-    const wasChecked = this.optionStates[index].checked;
-    this.optionStates[index].checked = !wasChecked;
-    this.optionStates = [...this.optionStates];
-    this.value = this.getValue();
-    this.selectEvent.emit();
-  }
-
   private onComboKeyDown(event: KeyboardEvent) {
     const max = this.options.length - 1;
 
@@ -222,6 +213,7 @@ export class TodoList {
 
     if (event.key === 'Shift' && typeof this.rangeStartIndex !== 'number') {
       this.rangeStartIndex = this.activeIndex;
+      this.rangeCheckState = !this.optionStates[this.activeIndex].checked;
       return;
     }
 
@@ -234,27 +226,20 @@ export class TodoList {
         event.stopPropagation();
         const newIndex = getUpdatedIndex(this.activeIndex, max, action);
         if (event.shiftKey) {
-          this.updateOptionRange(newIndex);
-        }
-        else if (!event.ctrlKey) {
-          this.updateOptionSelection(newIndex, true, true);
+          this.updateOptionRange(newIndex, this.rangeCheckState);
         }
         return this.onOptionChange(newIndex);
       case MenuActions.Select:
         event.preventDefault();
         event.stopPropagation();
-        if (event.ctrlKey) {
-          return this.updateOptionSelection(this.activeIndex, !this.optionStates[this.activeIndex].selected, false);
-        }
-        return this.updateOptionChecks(this.activeIndex);
+        return this.checkOption(this.activeIndex);
       case MenuActions.Confirm:
       case MenuActions.Close:
         event.preventDefault();
         event.stopPropagation();
         return this.updateMenuState(false);
       case MenuActions.Type:
-        this.onComboType(event.key);
-        return this.updateMenuState(true);
+        return this.onComboType(event.key);
       case MenuActions.Open:
         event.stopPropagation();
         event.preventDefault();
@@ -293,17 +278,15 @@ export class TodoList {
     // handle selecting ranges
     if (event.shiftKey) {
       event.preventDefault();
-      this.updateOptionRange(index);
-    }
-
-    // handle toggling selection
-    else if (event.ctrlKey) {
-      this.updateOptionSelection(index, !this.optionStates[index].selected, false);
+      this.updateOptionRange(index, this.optionStates[this.rangeStartIndex].checked);
     }
 
     // handle plain selection click
     else {
-      this.updateOptionSelection(index, true, true);
+      const newState = !this.optionStates[index].checked;
+      this.optionStates[index].checked = newState;
+      this.optionStates = [...this.optionStates];
+      this.value = this.getValue();
     }
 
     this.onOptionChange(index);
@@ -314,58 +297,31 @@ export class TodoList {
     this.callFocus = true;
   }
 
-  private updateOptionChecks(index: number) {
-    this.optionStates = this.optionStates.map((state, i) => {
-      let checked = state.checked;
-      if (i === index || state.selected) {
-        checked = !state.checked;
-      }
-
-      return {
-        name: state.name,
-        selected: state.selected,
-        checked
-      };
-    });
+  private checkOption(index: number) {
+    this.optionStates[index].checked = !this.optionStates[index].checked;
+    this.optionStates = [...this.optionStates];
 
     // update value
     this.value = this.getValue();
 
-    this.selectEvent.emit();
+    this.selectEvent.emit(this.options[index]);
   }
 
-  private updateOptionSelection(index: number, selected: boolean, clear = true) {
-    // if we need to clear all other selected states, loop through entire array
-    if (clear) {
-      this.optionStates = this.optionStates.map((state, i) => ({
-        name: state.name,
-        checked: state.checked,
-        selected: i === index ? selected : false
-      }));
-    }
-    
-    // otherwise, just modify the one state
-    else {
-      this.optionStates[index].selected = selected;
-      this.optionStates = [...this.optionStates];
-    }
-  }
-
-  private updateOptionRange(endIndex: number) {
+  private updateOptionRange(endIndex: number, state: boolean) {
     let { rangeStartIndex, rangeEndIndex } = this;
 
     // remove previous range, if it exists
     if (typeof this.rangeEndIndex === 'number') {
       const prevRange = rangeEndIndex > rangeStartIndex ? [rangeStartIndex, rangeEndIndex] : [rangeEndIndex, rangeStartIndex];
       for (let index = prevRange[0]; index <= prevRange[1]; index++) {
-        this.optionStates[index].selected = false;
+        this.optionStates[index].checked = !state;
       }
     }
 
     // set new range selection
     const range = endIndex > rangeStartIndex ? [rangeStartIndex, endIndex] : [endIndex, rangeStartIndex];
     for (let index = range[0]; index <= range[1]; index++) {
-      this.optionStates[index].selected = true;
+      this.optionStates[index].checked = state;
     }
 
     this.rangeEndIndex = endIndex;
@@ -392,7 +348,6 @@ export class TodoList {
   private getValue() {
     const numChecked = this.optionStates.filter((state) => state.checked).length;
     const optionWord = this.optionType || 'option';
-    console.log('updating value');
 
     switch(numChecked) {
       case 0:

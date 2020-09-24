@@ -41,10 +41,17 @@ export class AppRoot {
 
         <div class="content">
           <todo-list
+            label="Favorite Books"
+            optionType="book"
+            options={this.data}
+            onSelection={() => alert('Favorite books updated')}
+          ></todo-list>
+          <multiselect-simple
             label="Order Books"
             optionType="book"
             options={this.data}
-          ></todo-list>
+          ></multiselect-simple>
+          <button type="button" onClick={() => alert('Order submitted')}>Submit Order</button>
         </div>
       </main>
     );

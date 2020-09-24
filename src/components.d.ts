@@ -8,6 +8,20 @@ import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     interface AppRoot {
     }
+    interface MultiselectSimple {
+        /**
+          * String label
+         */
+        "label": string;
+        /**
+          * Option Type (used in value)
+         */
+        "optionType": string;
+        /**
+          * Array of name/value options
+         */
+        "options": string[];
+    }
     interface TodoList {
         /**
           * String label
@@ -30,6 +44,12 @@ declare global {
         prototype: HTMLAppRootElement;
         new (): HTMLAppRootElement;
     };
+    interface HTMLMultiselectSimpleElement extends Components.MultiselectSimple, HTMLStencilElement {
+    }
+    var HTMLMultiselectSimpleElement: {
+        prototype: HTMLMultiselectSimpleElement;
+        new (): HTMLMultiselectSimpleElement;
+    };
     interface HTMLTodoListElement extends Components.TodoList, HTMLStencilElement {
     }
     var HTMLTodoListElement: {
@@ -38,11 +58,30 @@ declare global {
     };
     interface HTMLElementTagNameMap {
         "app-root": HTMLAppRootElement;
+        "multiselect-simple": HTMLMultiselectSimpleElement;
         "todo-list": HTMLTodoListElement;
     }
 }
 declare namespace LocalJSX {
     interface AppRoot {
+    }
+    interface MultiselectSimple {
+        /**
+          * String label
+         */
+        "label"?: string;
+        /**
+          * Emit a custom select event on value change
+         */
+        "onSelection"?: (event: CustomEvent<any>) => void;
+        /**
+          * Option Type (used in value)
+         */
+        "optionType"?: string;
+        /**
+          * Array of name/value options
+         */
+        "options"?: string[];
     }
     interface TodoList {
         /**
@@ -64,6 +103,7 @@ declare namespace LocalJSX {
     }
     interface IntrinsicElements {
         "app-root": AppRoot;
+        "multiselect-simple": MultiselectSimple;
         "todo-list": TodoList;
     }
 }
@@ -72,6 +112,7 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             "app-root": LocalJSX.AppRoot & JSXBase.HTMLAttributes<HTMLAppRootElement>;
+            "multiselect-simple": LocalJSX.MultiselectSimple & JSXBase.HTMLAttributes<HTMLMultiselectSimpleElement>;
             "todo-list": LocalJSX.TodoList & JSXBase.HTMLAttributes<HTMLTodoListElement>;
         }
     }
