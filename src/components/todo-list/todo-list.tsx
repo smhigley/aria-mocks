@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { Component, Event, EventEmitter, h, Prop, State, Watch } from '@stencil/core';
-import { getActionFromKey, getIndexByLetter, getSearchString, getUpdatedIndex, isScrollable, maintainScrollVisibility, MenuActions, uniqueId } from './utils';
+import { getActionFromKey, getIndexByLetter, getSearchString, getUpdatedIndex, isScrollable, maintainScrollVisibility, MenuActions, uniqueId } from '../../global/utils';
 
 interface OptionState {
   name: string;
@@ -73,9 +73,13 @@ export class TodoList {
   // save reference to active option
   private activeOptionRef: HTMLElement;
 
+  // hacky fix iOS VoiceOver's weird double click thing
+  // should investigate for real later
+  private debounceMenu = false;
+
   @Watch('options')
   watchOptions(newValue: string[] = []) {
-    const previousStates = [...this.optionStates];
+    const { optionStates: previousStates = [] } = this;
     this.optionStates = newValue.map((option) => {
       const oldValue = previousStates.find((state) => state.name === option);
       if (oldValue) {
@@ -147,7 +151,7 @@ export class TodoList {
           ref={(el) => this.inputRef = el}
           tabindex="0"
           onBlur={this.onComboBlur.bind(this)}
-          onClick={() => this.updateMenuState(true)}
+          onClick={() => this.updateMenuState(!open)}
           onKeyDown={this.onComboKeyDown.bind(this)}
         >
           {value}
@@ -227,9 +231,10 @@ export class TodoList {
         return this.updateMenuState(false);
       case MenuActions.Type:
         this.onComboType(event.key);
-        // fallthrough
+        return this.updateMenuState(true);
       case MenuActions.Open:
         event.stopPropagation();
+        event.preventDefault();
         return this.updateMenuState(true);
     }
   }
@@ -345,6 +350,18 @@ export class TodoList {
   }
 
   private updateMenuState(open: boolean, callFocus = true) {
+    // weird iOS VO quirk
+    if(!open && this.debounceMenu) {
+      return;
+    }
+
+    if (open && !this.debounceMenu) {
+      this.debounceMenu = true;
+      setTimeout(() => {
+        this.debounceMenu = false;
+      }, 100);
+    }
+
     this.open = open;
     this.callFocus = callFocus;
   }
